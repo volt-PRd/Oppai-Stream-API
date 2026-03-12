@@ -1,0 +1,422 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 1.0.0
+  description: OppAI Stream API - Scraper API for oppai.stream anime content
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: anime
+    description: Anime information and episodes
+  - name: search
+    description: Search operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /anime/{animeSlug}:
+    get:
+      operationId: getAnimeInfo
+      tags: [anime]
+      summary: Get anime information
+      description: Returns detailed information about an anime including metadata, episode count, and available episodes
+      parameters:
+        - name: animeSlug
+          in: path
+          required: true
+          description: The anime slug/ID from oppai.stream URL (e.g. "sword-art-online")
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Anime information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnimeInfo"
+        "404":
+          description: Anime not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Scraping error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /anime/{animeSlug}/episode/{episodeNumber}:
+    get:
+      operationId: getEpisodeStreams
+      tags: [anime]
+      summary: Get episode stream URLs
+      description: Returns raw stream URLs for all available qualities for a specific episode
+      parameters:
+        - name: animeSlug
+          in: path
+          required: true
+          description: The anime slug/ID from oppai.stream URL
+          schema:
+            type: string
+        - name: episodeNumber
+          in: path
+          required: true
+          description: Episode number
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        "200":
+          description: Episode stream URLs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EpisodeStreams"
+        "404":
+          description: Episode not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Scraping error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /search:
+    get:
+      operationId: searchAnime
+      tags: [search]
+      summary: Search anime
+      description: Search for anime by title on oppai.stream
+      parameters:
+        - name: q
+          in: query
+          required: true
+          description: Search query
+          schema:
+            type: string
+        - name: page
+          in: query
+          required: false
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResults"
+        "500":
+          description: Scraping error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /anime/{animeSlug}/episodes:
+    get:
+      operationId: getAnimeEpisodes
+      tags: [anime]
+      summary: Get all episodes list
+      description: Returns a list of all available episodes for an anime
+      parameters:
+        - name: animeSlug
+          in: path
+          required: true
+          description: The anime slug/ID
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Episodes list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EpisodesList"
+        "404":
+          description: Anime not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Scraping error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /latest:
+    get:
+      operationId: getLatestEpisodes
+      tags: [anime]
+      summary: Get latest episodes
+      description: Returns the latest released episodes across all anime
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        "200":
+          description: Latest episodes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LatestEpisodes"
+        "500":
+          description: Scraping error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+    StreamQuality:
+      type: object
+      properties:
+        quality:
+          type: string
+          description: Quality label (e.g. "1080p", "720p", "480p", "360p")
+        url:
+          type: string
+          description: Direct stream URL
+        type:
+          type: string
+          description: Stream type (e.g. "m3u8", "mp4")
+      required:
+        - quality
+        - url
+        - type
+    EpisodeStreams:
+      type: object
+      properties:
+        animeSlug:
+          type: string
+        animeName:
+          type: string
+        episodeNumber:
+          type: integer
+        episodeTitle:
+          type: string
+        thumbnail:
+          type: string
+        streams:
+          type: array
+          items:
+            $ref: "#/components/schemas/StreamQuality"
+        subtitles:
+          type: array
+          items:
+            type: object
+            properties:
+              language:
+                type: string
+              url:
+                type: string
+            required:
+              - language
+              - url
+      required:
+        - animeSlug
+        - animeName
+        - episodeNumber
+        - streams
+    AnimeInfo:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        titleJapanese:
+          type: string
+        coverImage:
+          type: string
+        bannerImage:
+          type: string
+        synopsis:
+          type: string
+        genres:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          description: Airing status (e.g. "Ongoing", "Completed")
+        type:
+          type: string
+          description: Type (e.g. "TV", "Movie", "OVA")
+        studio:
+          type: string
+        releaseYear:
+          type: string
+        season:
+          type: string
+        rating:
+          type: string
+        episodeCount:
+          type: integer
+          description: Number of available episodes
+        episodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/EpisodeSummary"
+      required:
+        - slug
+        - title
+        - episodeCount
+        - streams
+    EpisodeSummary:
+      type: object
+      properties:
+        number:
+          type: integer
+        title:
+          type: string
+        thumbnail:
+          type: string
+        url:
+          type: string
+      required:
+        - number
+        - url
+    SearchResult:
+      type: object
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        coverImage:
+          type: string
+        genres:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        type:
+          type: string
+        episodeCount:
+          type: integer
+        url:
+          type: string
+      required:
+        - slug
+        - title
+        - url
+    SearchResults:
+      type: object
+      properties:
+        query:
+          type: string
+        page:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+        hasNextPage:
+          type: boolean
+      required:
+        - query
+        - page
+        - results
+        - hasNextPage
+    EpisodesList:
+      type: object
+      properties:
+        animeSlug:
+          type: string
+        animeName:
+          type: string
+        episodeCount:
+          type: integer
+        episodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/EpisodeSummary"
+      required:
+        - animeSlug
+        - animeName
+        - episodeCount
+        - episodes
+    LatestEpisodeEntry:
+      type: object
+      properties:
+        animeSlug:
+          type: string
+        animeName:
+          type: string
+        episodeNumber:
+          type: integer
+        episodeTitle:
+          type: string
+        thumbnail:
+          type: string
+        coverImage:
+          type: string
+        releasedAt:
+          type: string
+        url:
+          type: string
+      required:
+        - animeSlug
+        - animeName
+        - episodeNumber
+        - url
+    LatestEpisodes:
+      type: object
+      properties:
+        page:
+          type: integer
+        episodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/LatestEpisodeEntry"
+        hasNextPage:
+          type: boolean
+      required:
+        - page
+        - episodes
+        - hasNextPage

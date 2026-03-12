@@ -1,0 +1,14 @@
+packages:
+  "framer-motion": "Smooth page transitions and interactions"
+  "prism-react-renderer": "Syntax highlighting for code blocks in documentation"
+  "clsx": "Utility for conditionally joining classNames"
+  "tailwind-merge": "Utility to merge tailwind classes"
+
+images:
+  - path: "artifacts/oppai-docs/public/images/hero-bg.png"
+    description: "Abstract dark gradient background with neon purple and pink tech lines and soft glow, suitable for an API documentation header"
+    aspect_ratio: "16:9"
+
+notes:
+  - Uses pre-generated api hooks from @workspace/api-client-react
+  - Defaulting to a dark theme for the tech/anime streaming aesthetic
